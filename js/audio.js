@@ -144,6 +144,8 @@ export async function sayLetter(l, full = true) {
 const recs = {}; // key -> { blob, url, buf, gain }
 
 export const hasRec = (id) => !!recs['L:' + id];
+// [글자 id, 녹음 blob] 목록 (백업용)
+export const recEntries = () => Object.entries(recs).filter(([k]) => k.startsWith('L:')).map(([k, r]) => [k.slice(2), r.blob]);
 
 async function prepare(key, blob) {
   const r = { blob, url: URL.createObjectURL(blob), buf: null, gain: 1 };

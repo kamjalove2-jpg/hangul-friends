@@ -3,8 +3,8 @@ import { store } from './store.js';
 import { randomChar, charEl } from './chars.js';
 
 // 보상 화면에 내 캐릭터가 함께 응원 (등록된 캐릭터가 없으면 아무것도 안 나옴)
-export function cheer(cls = 'cheer') {
-  const c = randomChar();
+export function cheer(cls = 'cheer', except = null) {
+  const c = randomChar(except);
   return c ? charEl(c, cls) : null;
 }
 

@@ -281,3 +281,19 @@ select.inp{max-width:420px;background:#fff}
   .board,.dwrap{margin:0 14px 8px}
   .sgrid,.pgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
 }
+
+/* ---- 캐릭터 글자 연결 ---- */
+.techar{width:clamp(50px,8vw,80px);height:clamp(50px,8vw,80px);display:block}
+.pe .pechar{width:44px;height:44px;display:block}
+.semo .semochar{width:80px;height:80px;display:block}
+.bigchar{width:clamp(110px,min(26vw,26vh),210px);height:clamp(110px,min(26vw,26vh),210px);display:block}
+.popchar{position:absolute;width:clamp(90px,16vw,170px);height:clamp(90px,16vw,170px);transform:translate(-50%,-50%);animation:popchar 1.8s ease-out forwards;z-index:3}
+@keyframes popchar{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}20%{transform:translate(-50%,-60%) scale(1.15);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-120%) scale(1);opacity:0}}
+.slot{position:relative}
+.slot .slotchar{position:absolute;right:-14px;bottom:-14px;width:42%;height:42%}
+.ccard .lsel{font-size:16px;padding:6px 8px;max-width:150px}
+.lchips{margin-top:8px}
+.lchips .segb{font-size:22px;padding:6px 14px}
+.lchips .lsel{font-size:17px;padding:6px 10px;width:auto}
+@media (orientation:landscape) and (max-height:520px){.techar{width:11vh;height:11vh}}
+.ccard .row{flex-wrap:wrap;justify-content:center;gap:6px}.ccard .btn.small{white-space:nowrap;padding:6px 10px}

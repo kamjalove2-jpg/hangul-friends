@@ -2,6 +2,7 @@ import { LETTERS, BY, compose } from './data.js';
 import { store, addStars, save } from './store.js';
 import { sfx, speak, sayLetter, josa } from './audio.js';
 import { h, shuffle, topbar, confetti, modal, refreshStars, cheer } from './ui.js';
+import { skin, charEl } from './chars.js';
 
 // ============ 풍선 터뜨리기 ============
 const EASY = ['ㅣ', 'ㅡ', 'ㅇ', 'ㅏ', 'ㅗ', 'ㅜ', 'ㄱ', 'ㄴ', 'ㅁ', 'ㅅ'];
@@ -47,10 +48,18 @@ export function balloonScreen(go) {
       const r = b.getBoundingClientRect();
       confetti(r.left + r.width / 2, r.top + r.height / 2, 18);
       addStars(1); refreshStars();
+      // 내 캐릭터가 연결된 글자면 풍선 자리에서 캐릭터가 깜짝 등장
+      const sk = skin(target);
+      if (sk.char) {
+        const sr = stage.getBoundingClientRect();
+        const pc = charEl(sk.char, 'popchar');
+        pc.style.left = (r.left - sr.left + r.width / 2) + 'px'; pc.style.top = (r.top - sr.top + r.height / 2) + 'px';
+        stage.append(pc);
+      }
       // 글자 읽기(AI + 내 녹음)가 다 끝난 뒤 다음 문제로 (최소 2초)
       const t0 = Date.now();
       later(async () => {
-        await sayLetter(target);
+        await sayLetter(sk);
         if (alive) later(newRound, Math.max(400, 2200 - (Date.now() - t0)));
       }, 250);
     } else {
@@ -90,8 +99,16 @@ export function blocksScreen(go) {
   const el = h('div', { class: 'screen' }, topbar(go, { title: '' }),
     h('div', { class: 'blocks' }, board, h('div', { class: 'tiles' }, rowC, rowV)));
 
+  // 칸에 글자 + (연결된 내 캐릭터가 있으면) 작은 사진
+  const fill = (slot, l) => {
+    slot.innerHTML = '';
+    if (!l) return;
+    slot.append(l.ch);
+    const sk = skin(l, true);
+    if (sk.char) slot.append(charEl(sk.char, 'slotchar'));
+  };
   const render = () => {
-    slotC.textContent = c ? c.ch : ''; slotV.textContent = v ? v.ch : '';
+    fill(slotC, c); fill(slotV, v);
     slotC.classList.toggle('filled', !!c); slotV.classList.toggle('filled', !!v);
   };
 

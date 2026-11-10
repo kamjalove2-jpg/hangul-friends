@@ -1,13 +1,17 @@
 // 내 캐릭터: 부모가 고른 사진을 이 기기(IndexedDB)에만 저장. 서버·GitHub에는 올라가지 않음.
 import { idb, allEntries, persist } from './db.js';
+import { guessLetters } from './data.js';
 
-const list = []; // { id, name, hidden, blob, url, img }
+// letter: 연결된 자모('' = 연결 안 함), mode: replace(기존 그림·단어 대체) | add(기존에 더하기)
+const list = []; // { id, name, hidden, letter, mode, blob, url, img }
 
 const toImg = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
 
 function wrap(id, v) {
   const url = URL.createObjectURL(v.blob);
-  const c = { id, name: v.name || '', hidden: !!v.hidden, t: v.t || 0, blob: v.blob, url, img: null };
+  const name = v.name || '';
+  const letter = v.letter !== undefined ? v.letter : (guessLetters(name)[0] || ''); // 예전 캐릭터는 이름으로 자동 연결
+  const c = { id, name, hidden: !!v.hidden, letter, mode: v.mode === 'add' ? 'add' : 'replace', t: v.t || 0, blob: v.blob, url, img: null };
   toImg(url).then((i) => { c.img = i; }).catch(() => {});
   return c;
 }
@@ -24,20 +28,44 @@ export async function loadChars() {
 
 export const allChars = () => list;
 export const chars = () => list.filter((c) => !c.hidden);
-export const randomChar = () => { const a = chars(); return a.length ? a[Math.floor(Math.random() * a.length)] : null; };
+const pickOne = (a) => (a.length ? a[Math.floor(Math.random() * a.length)] : null);
+// 무작위 응원 캐릭터 (이미 화면에 나온 캐릭터는 빼고)
+export const randomChar = (except = null) => pickOne(chars().filter((c) => c !== except));
 
-async function put(c) {
-  await idb('img', 'readwrite', (s) => s.put({ name: c.name, hidden: c.hidden, t: c.t, blob: c.blob }, c.id));
+// 이름 앞에 붙인 자모("ㄹ 로디")는 떼고 부르기
+export const callName = (c) => (c.name || '').replace(/^[\u3131-\u3163]\s*/, '').trim();
+
+// 글자에 연결된 캐릭터 (여러 개면 무작위, first=true면 항상 첫 번째)
+export function letterChar(id, first = false) {
+  const a = chars().filter((c) => c.letter === id);
+  return first ? a[0] || null : pickOne(a);
 }
 
-export async function addChar(blob, name) {
-  const c = wrap('c' + Date.now() + Math.floor(Math.random() * 1000), { name, blob, t: Date.now() });
+// 글자에 캐릭터 입히기: 단어와 그림을 캐릭터 기준으로 바꾼 글자 객체
+export function skin(L, first = false) {
+  const c = letterChar(L.id, first);
+  if (!c) return { ...L, char: null, mode: '' };
+  const nm = callName(c) || L.word;
+  return { ...L, char: c, mode: c.mode, word: c.mode === 'add' ? `${L.word}! ${nm}` : nm };
+}
+
+// 글자 그림: 대체면 캐릭터 사진, 아니면 이모지
+export const art = (sk, cls = '') => (sk.char && sk.mode === 'replace' ? charEl(sk.char, cls) : sk.emoji);
+
+async function put(c) {
+  await idb('img', 'readwrite', (s) => s.put({ name: c.name, hidden: c.hidden, letter: c.letter, mode: c.mode, t: c.t, blob: c.blob }, c.id));
+}
+
+export async function addChar(blob, name, letter, mode = 'replace') {
+  if (letter === undefined) letter = guessLetters(name)[0] || '';
+  const c = wrap('c' + Date.now() + Math.floor(Math.random() * 1000), { name, letter, mode, blob, t: Date.now() });
   await put(c);
   list.push(c);
   return c;
 }
 
 export async function setHidden(c, hidden) { c.hidden = hidden; await put(c); }
+export async function setLink(c, letter, mode) { c.letter = letter; c.mode = mode; await put(c); }
 export async function delChar(c) {
   await idb('img', 'readwrite', (s) => s.delete(c.id));
   const i = list.indexOf(c); if (i >= 0) list.splice(i, 1);
@@ -114,29 +142,6 @@ export function outline(src, w, hgt) {
   ctx.clearRect(0, 0, w, hgt);
   ctx.putImageData(out, 0, 0);
   return cv;
-}
-
-// ---------- 백업 / 복원 ----------
-const blobToData = (b) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
-
-export async function exportChars() {
-  const items = [];
-  for (const c of list) items.push({ name: c.name, hidden: c.hidden, data: await blobToData(c.blob) });
-  return new Blob([JSON.stringify({ app: 'hangul-friends', v: 1, chars: items })], { type: 'application/json' });
-}
-
-export async function importChars(file) {
-  const j = JSON.parse(await file.text());
-  if (!j || !Array.isArray(j.chars)) throw new Error('형식 오류');
-  let n = 0;
-  for (const it of j.chars) {
-    if (!it.data) continue;
-    const blob = await (await fetch(it.data)).blob();
-    const c = await addChar(blob, it.name || '');
-    if (it.hidden) await setHidden(c, true);
-    n++;
-  }
-  return n;
 }
 
 // 캐릭터를 보여줄 <img> 요소

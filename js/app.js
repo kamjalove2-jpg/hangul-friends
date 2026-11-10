@@ -5,7 +5,7 @@ import { mountTracer, LEVELS } from './trace.js';
 import { h, topbar, confetti, modal, gate, toast, refreshStars, cheer, starRow } from './ui.js';
 import { balloonScreen, blocksScreen } from './games.js';
 import { drawScreen, pictureScreen } from './draw.js';
-import { loadChars } from './chars.js';
+import { loadChars, skin, art, charEl } from './chars.js';
 import { bookScreen, parentScreen } from './book.js';
 
 const app = document.getElementById('app');
@@ -43,7 +43,7 @@ function homeScreen(go) {
     ['🧩', '글자 블록', 'blocks', '#d0ebff'], ['🎨', '그리기', 'draw', '#d3f9d8'],
     ['⭐', '스티커북', 'book', '#fff3bf'], ['🏷️', '내 이름', 'name', '#e5dbff'],
   ];
-  const t = todayLetter();
+  const t = todayLetter(), tk = skin(t, true);
   const got = LETTERS.filter((l) => store.stickers[l.id]).length;
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -57,7 +57,7 @@ function homeScreen(go) {
       h('button', { class: 'btn sq ghost', onclick: () => gate(() => go('parent')) }, '⚙️')),
     h('button', { class: 'today', onclick: () => { sfx('tap'); go('trace', { id: t.id }); } },
       h('div', { class: 'tl' }, '오늘의 글자'), h('div', { class: 'tg' }, t.ch),
-      h('div', { class: 'te' }, store.stickers[t.id] ? t.emoji : '❓'), cheer('homechar'), h('div', { class: 'tgo' }, '▶')),
+      h('div', { class: 'te' }, store.stickers[t.id] ? art(tk, 'techar') : '❓'), cheer('homechar', tk.char), h('div', { class: 'tgo' }, '▶')),
     h('div', { class: 'menu' }, menu.map(([e, label, to, bg]) => h('button', {
       class: 'mbtn', style: `background:${bg}`, onclick: () => { sfx('tap'); go(to); },
     }, h('span', { class: 'me' }, e), h('span', { class: 'ml' }, label)))),
@@ -77,7 +77,7 @@ function pickScreen(go) {
     LETTERS.filter((l) => l.kind === tab).forEach((l) => {
       const got = store.stickers[l.id];
       grid.append(h('button', { class: 'pcard' + (got ? ' got' : ''), onclick: () => { sfx('tap'); go('trace', { id: l.id }); } },
-        h('span', { class: 'pg' }, l.ch), h('span', { class: 'pe' }, got ? l.emoji : '')));
+        h('span', { class: 'pg' }, l.ch), h('span', { class: 'pe' }, got ? art(skin(l, true), 'pechar') : '')));
     });
   }
   render();
@@ -87,7 +87,7 @@ function pickScreen(go) {
 
 // ============ 글자 따라쓰기 ============
 function traceScreen(go, { id }) {
-  const L = BY[id];
+  const L = skin(BY[id]); // 내 캐릭터가 연결된 글자면 그림·단어가 캐릭터로
   const stage = h('div', { class: 'tstage' });
   let tr, timer;
   const again = () => { sfx('tap'); tr.reset(); };
@@ -110,7 +110,9 @@ function traceScreen(go, { id }) {
       const m = modal(h('div', { class: 'reward' },
         h('div', { class: 'got' }, gold ? '✨ 반짝 스티커! ✨' : isNew ? '새 스티커!' : '참 잘했어요!'),
         starRow(stars),
-        h('div', { class: 'row' }, h('div', { class: 'bigemo bounce' + (gold ? ' goldemo' : '') }, L.emoji), cheer()),
+        h('div', { class: 'row' },
+          h('div', { class: 'bigemo bounce' + (gold ? ' goldemo' : '') }, art(L, 'bigchar')),
+          L.char && L.mode === 'add' ? charEl(L.char, 'cheer') : cheer('cheer', L.char)),
         h('div', { class: 'cap' }, `${L.ch}  ${L.word}`),
         h('div', { class: 'row' },
           h('button', { class: 'btn round', onclick: () => { m.close(); go('trace', { id }); } }, '🔁'),

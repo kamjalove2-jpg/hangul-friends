@@ -99,6 +99,21 @@ export function syllableStrokes(ch) {
   return [...place(cs, bc), ...place(vs, bv), ...(fs ? place(fs, bf) : [])];
 }
 
+// 캐릭터 이름으로 연결할 글자 추천: "로디" → ['ㄹ'], "뽀로로" → ['ㅂ'], "아이언" → ['ㅇ','ㅏ'], "ㅎ 하늘" → ['ㅎ']
+const DBL = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };
+export function guessLetters(name) {
+  const f = (name || '').trim()[0];
+  if (!f) return [];
+  if (BY[f]) return [f];
+  if (DBL[f]) return [DBL[f]];
+  const p = syllableParts(f);
+  if (!p) return [];
+  const cho = DBL[p.cho] || p.cho, out = [];
+  if (BY[cho]) out.push(cho);
+  if (cho === 'ㅇ' && BY[p.jung]) out.push(p.jung);
+  return out;
+}
+
 export function compose(cho, jung) {
   const a = CHO.indexOf(cho), b = JUNG.indexOf(jung);
   if (a < 0 || b < 0) return '';
