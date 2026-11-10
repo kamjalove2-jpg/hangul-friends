@@ -1,9 +1,11 @@
 import { LETTERS, BY, ORDER, syllableStrokes } from './data.js';
 import { store, save, today, addTrace, addStars, markDay, tick, limitSeconds } from './store.js';
 import { sfx, speak, sayLetter, unlock, stopVoice, preloadRecs } from './audio.js';
-import { mountTracer } from './trace.js';
-import { h, topbar, confetti, modal, gate, toast, refreshStars } from './ui.js';
-import { balloonScreen, blocksScreen, drawScreen } from './games.js';
+import { mountTracer, LEVELS } from './trace.js';
+import { h, topbar, confetti, modal, gate, toast, refreshStars, cheer, starRow } from './ui.js';
+import { balloonScreen, blocksScreen } from './games.js';
+import { drawScreen, pictureScreen } from './draw.js';
+import { loadChars } from './chars.js';
 import { bookScreen, parentScreen } from './book.js';
 
 const app = document.getElementById('app');
@@ -19,7 +21,9 @@ export function go(name, arg) {
   cleanup = s.cleanup; current = name;
 }
 
-const tracerOpts = () => (store.settings.easy ? { radius: 17, need: 0.7, width: 15 } : { radius: 12, need: 0.82, width: 13 });
+const tracerOpts = () => LEVELS[store.settings.level] || LEVELS.easy;
+const hardMode = () => ['hard', 'expert'].includes(store.settings.level);
+const retry = () => { sfx('soft'); speak('천천히 한 번 더 써 볼까?'); toast('한 번 더! 💪'); };
 
 function nextLetter(after) {
   const i = ORDER.indexOf(after);
@@ -53,7 +57,7 @@ function homeScreen(go) {
       h('button', { class: 'btn sq ghost', onclick: () => gate(() => go('parent')) }, '⚙️')),
     h('button', { class: 'today', onclick: () => { sfx('tap'); go('trace', { id: t.id }); } },
       h('div', { class: 'tl' }, '오늘의 글자'), h('div', { class: 'tg' }, t.ch),
-      h('div', { class: 'te' }, store.stickers[t.id] ? t.emoji : '❓'), h('div', { class: 'tgo' }, '▶')),
+      h('div', { class: 'te' }, store.stickers[t.id] ? t.emoji : '❓'), cheer('homechar'), h('div', { class: 'tgo' }, '▶')),
     h('div', { class: 'menu' }, menu.map(([e, label, to, bg]) => h('button', {
       class: 'mbtn', style: `background:${bg}`, onclick: () => { sfx('tap'); go(to); },
     }, h('span', { class: 'me' }, e), h('span', { class: 'ml' }, label)))),
@@ -96,14 +100,17 @@ function traceScreen(go, { id }) {
   tr = mountTracer(stage, L.strokes, {
     ...tracerOpts(),
     onStroke: () => sfx('stroke'),
-    onDone: () => {
+    onRetry: retry,
+    onDone: ({ stars }) => {
       sfx('win'); confetti();
-      const isNew = addTrace(id);
-      addStars(1); refreshStars();
+      const gold = hardMode() && stars === 3; // 어려움 이상에서 별 3개 = 반짝 스티커
+      const isNew = addTrace(id, gold);
+      addStars(stars); refreshStars();
       timer = setTimeout(() => sayLetter(L), 500);
       const m = modal(h('div', { class: 'reward' },
-        h('div', { class: 'got' }, isNew ? '새 스티커!' : '참 잘했어요!'),
-        h('div', { class: 'bigemo bounce' }, L.emoji),
+        h('div', { class: 'got' }, gold ? '✨ 반짝 스티커! ✨' : isNew ? '새 스티커!' : '참 잘했어요!'),
+        starRow(stars),
+        h('div', { class: 'row' }, h('div', { class: 'bigemo bounce' + (gold ? ' goldemo' : '') }, L.emoji), cheer()),
         h('div', { class: 'cap' }, `${L.ch}  ${L.word}`),
         h('div', { class: 'row' },
           h('button', { class: 'btn round', onclick: () => { m.close(); go('trace', { id }); } }, '🔁'),
@@ -147,8 +154,9 @@ function nameScreen(go) {
     stage.innerHTML = '';
     const o = tracerOpts();
     tr = mountTracer(stage, syllableStrokes(syls[idx]), {
-      ...o, radius: o.radius * 0.8, width: o.width * 0.8,
+      ...o, radius: Math.max(7, o.radius * 0.8), width: o.width * 0.8, off: Math.max(8, o.off * 0.8),
       onStroke: () => sfx('stroke'),
+      onRetry: retry,
       onDone: () => {
         sfx('win'); confetti(innerWidth / 2, innerHeight / 2, 20); speak(syls[idx], 0.7);
         idx++;
@@ -162,7 +170,7 @@ function nameScreen(go) {
     speak(`${store.name}! 이름을 다 썼어요! 멋져요!`);
     chips.querySelectorAll('.nchip').forEach((c) => { c.classList.remove('cur'); c.classList.add('ok'); });
     const m = modal(h('div', { class: 'reward' }, h('div', { class: 'got' }, '이름 스티커!'),
-      h('div', { class: 'bigemo bounce' }, '🏅'), h('div', { class: 'cap' }, store.name),
+      h('div', { class: 'row' }, h('div', { class: 'bigemo bounce' }, '🏅'), cheer()), h('div', { class: 'cap' }, store.name),
       h('div', { class: 'row' },
         h('button', { class: 'btn round', onclick: () => { m.close(); start(); } }, '🔁'),
         h('button', { class: 'btn round', onclick: () => { m.close(); go('book'); } }, '⭐'),
@@ -175,7 +183,7 @@ function nameScreen(go) {
 
 const screens = {
   home: homeScreen, pick: pickScreen, trace: traceScreen, name: nameScreen,
-  balloon: balloonScreen, blocks: blocksScreen, draw: drawScreen, book: bookScreen, parent: parentScreen,
+  balloon: balloonScreen, blocks: blocksScreen, draw: drawScreen, picture: pictureScreen, book: bookScreen, parent: parentScreen,
 };
 
 // ============ 사용 시간 관리 ============
@@ -211,6 +219,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) save(
 
 markDay();
 preloadRecs();
+loadChars().then(() => { if (current === 'home') go('home'); });
 go('home');
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-window.__go = go; // 디버깅용
+window.__go = go; window.__store = store; // 디버깅용

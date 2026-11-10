@@ -1,7 +1,7 @@
 import { LETTERS, BY, compose } from './data.js';
 import { store, addStars, save } from './store.js';
-import { sfx, speak, sayLetter } from './audio.js';
-import { h, shuffle, topbar, confetti, modal, refreshStars } from './ui.js';
+import { sfx, speak, sayLetter, josa } from './audio.js';
+import { h, shuffle, topbar, confetti, modal, refreshStars, cheer } from './ui.js';
 
 // ============ 풍선 터뜨리기 ============
 const EASY = ['ㅣ', 'ㅡ', 'ㅇ', 'ㅏ', 'ㅗ', 'ㅜ', 'ㄱ', 'ㄴ', 'ㅁ', 'ㅅ'];
@@ -51,7 +51,7 @@ export function balloonScreen(go) {
       later(newRound, 2200);
     } else {
       sfx('boing'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-      speak(`이건 ${l.say}. ${target.say}을 찾아보자!`);
+      speak(`이건 ${l.say}. ${josa(target.say, '을', '를')} 찾아보자!`);
     }
   }
 
@@ -60,7 +60,7 @@ export function balloonScreen(go) {
     addStars(2); refreshStars();
     speak('우와! 모두 맞췄어요! 최고예요!');
     const m = modal(h('div', { class: 'reward' },
-      h('div', { class: 'bigemo' }, '🎈🏆🎈'), h('div', { class: 'cap' }, '별 +2 ⭐⭐'),
+      h('div', { class: 'row' }, h('div', { class: 'bigemo' }, '🎈🏆🎈'), cheer()), h('div', { class: 'cap' }, '별 +2 ⭐⭐'),
       h('div', { class: 'row' },
         h('button', { class: 'btn round', onclick: () => { m.close(); round = 0; done = 0; newRound(); } }, '🔁'),
         h('button', { class: 'btn round', onclick: () => { m.close(); go('home'); } }, '🏠'))), { dismiss: false });
@@ -112,64 +112,4 @@ export function blocksScreen(go) {
   }
 
   return { el, cleanup: () => {} };
-}
-
-// ============ 그리기 ============
-const STAMPS = ['🦖', '🚗', '🐘', '🚒', '🦁', '🚀', '🐢', '🚜', '🦕', '🐯'];
-const COLS = ['rainbow', '#ff6b6b', '#ffa94d', '#fcc419', '#51cf66', '#339af0', '#9775fa', '#343a40'];
-
-export function drawScreen(go) {
-  let col = 'rainbow', size = 16, mode = 'brush', hue = 0, down = false, last = null, pid = null;
-  const cv = h('canvas', { class: 'dcanvas' });
-  const wrap = h('div', { class: 'dwrap' }, cv);
-  const ctx = cv.getContext('2d');
-
-  const colBtns = COLS.map((c) => h('button', {
-    class: 'cbtn' + (c === col ? ' on' : ''), style: c === 'rainbow' ? '' : `background:${c}`,
-    onclick: (e) => { sfx('tap'); col = c; mode = 'brush'; sync(); },
-  }, c === 'rainbow' ? '🌈' : ''));
-  const sizeBtn = h('button', { class: 'btn sq', onclick: () => { size = size === 16 ? 34 : 16; sync(); } }, '●');
-  const stampBtn = h('button', { class: 'btn sq', onclick: () => { mode = mode === 'stamp' ? 'brush' : 'stamp'; sync(); } }, '🦖');
-  const clr = h('button', { class: 'btn sq', onclick: () => { sfx('pop'); ctx.clearRect(0, 0, cv.width, cv.height); } }, '🗑️');
-  const bar = h('div', { class: 'bar' }, colBtns, sizeBtn, stampBtn, clr);
-  const sync = () => {
-    colBtns.forEach((b, i) => b.classList.toggle('on', COLS[i] === col && mode === 'brush'));
-    sizeBtn.style.fontSize = size === 16 ? '20px' : '40px'; stampBtn.classList.toggle('on', mode === 'stamp');
-  };
-  const el = h('div', { class: 'screen' }, topbar(go, { title: '' }), wrap, bar);
-
-  const fit = () => {
-    const w = wrap.clientWidth, hh = wrap.clientHeight;
-    if (!w || !hh) return;
-    const d = Math.min(devicePixelRatio || 1, 2);
-    const keep = document.createElement('canvas'); keep.width = cv.width; keep.height = cv.height;
-    if (cv.width) keep.getContext('2d').drawImage(cv, 0, 0);
-    cv.width = Math.round(w * d); cv.height = Math.round(hh * d);
-    cv.style.width = w + 'px'; cv.style.height = hh + 'px';
-    if (keep.width) ctx.drawImage(keep, 0, 0);
-    ctx.scale(d, d);
-  };
-  const ro = new ResizeObserver(fit); ro.observe(wrap);
-  const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-  const style = () => { ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = size; ctx.strokeStyle = col === 'rainbow' ? `hsl(${hue} 90% 55%)` : col; };
-
-  cv.addEventListener('pointerdown', (e) => {
-    if (down) return;
-    e.preventDefault(); down = true; pid = e.pointerId; cv.setPointerCapture(pid); last = pos(e);
-    if (mode === 'stamp') {
-      const s = STAMPS[Math.floor(Math.random() * STAMPS.length)];
-      ctx.font = '90px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, last.x, last.y);
-      sfx('tap'); return;
-    }
-    style(); ctx.beginPath(); ctx.arc(last.x, last.y, size / 2, 0, 7); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
-  });
-  cv.addEventListener('pointermove', (e) => {
-    if (!down || e.pointerId !== pid || mode === 'stamp') return;
-    const p = pos(e); hue = (hue + 3) % 360; style();
-    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p;
-  });
-  const up = (e) => { if (e.pointerId === pid) { down = false; pid = null; } };
-  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-  sync();
-  return { el, cleanup: () => ro.disconnect() };
 }

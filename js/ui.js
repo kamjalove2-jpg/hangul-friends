@@ -1,5 +1,16 @@
 import { sfx } from './audio.js';
 import { store } from './store.js';
+import { randomChar, charEl } from './chars.js';
+
+// 보상 화면에 내 캐릭터가 함께 응원 (등록된 캐릭터가 없으면 아무것도 안 나옴)
+export function cheer(cls = 'cheer') {
+  const c = randomChar();
+  return c ? charEl(c, cls) : null;
+}
+
+export function starRow(n) {
+  return h('div', { class: 'starrow' }, [1, 2, 3].map((i) => h('span', { class: i <= n ? 'on' : '' }, '⭐')));
+}
 
 export function h(tag, props = {}, ...kids) {
   const e = document.createElement(tag);

@@ -165,3 +165,33 @@ input{-webkit-user-select:text;user-select:text;font-family:inherit}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-18px)}40%{transform:translateX(16px)}60%{transform:translateX(-10px)}80%{transform:translateX(8px)}}
 @keyframes resop{0%{transform:scale(.3) rotate(-20deg)}60%{transform:scale(1.2) rotate(6deg)}100%{transform:scale(1)}}
 @keyframes conf{0%{transform:translate(0,0) rotate(0);opacity:1}55%{transform:translate(var(--dx),var(--dy)) rotate(200deg);opacity:1}100%{transform:translate(var(--dx),calc(var(--dy) + 240px)) rotate(400deg);opacity:0}}
+
+/* ---- v2: 난이도·캐릭터·따라 그리기 ---- */
+.starrow{font-size:40px;letter-spacing:4px}.starrow span{filter:grayscale(1);opacity:.25}.starrow span.on{filter:none;opacity:1}
+.goldemo{filter:drop-shadow(0 0 18px #ffd43b) drop-shadow(0 0 6px #fab005)}
+.scard.gold{background:linear-gradient(135deg,#fff9db,#ffe066)}
+.scard.gold::after{content:"✨";position:absolute;left:8px;top:6px;font-size:26px}
+.charimg{object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none}
+.cheer{width:clamp(110px,20vw,190px);height:clamp(110px,20vw,190px);animation:bounce 1s infinite alternate}
+.homechar{width:clamp(70px,11vw,110px);height:clamp(70px,11vw,110px)}
+.stk .stkimg{width:clamp(60px,11vw,110px);height:clamp(60px,11vw,110px);display:block}
+.bgc{pointer-events:none}
+.picker{display:flex;flex-direction:column;gap:12px;min-width:min(640px,80vw)}
+.pkt{font-size:24px;font-weight:900}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px}
+.pickc{border:0;border-radius:22px;background:#f1f3f5;box-shadow:var(--shadow);aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px}
+.pickc.got{background:#d3f9d8}.pickc.photo{background:#fff3bf}
+.pke{font-size:46px;line-height:1}.pkn{font-size:16px;font-weight:800}
+.pickc .pki{width:64px;height:64px}
+.hint{font-size:15px!important;color:#868e96;line-height:1.45}
+.gap{height:10px}
+.row.wrap{flex-wrap:wrap}
+.chk{font-size:17px;display:flex;align-items:center;gap:6px}
+.chk input{width:22px;height:22px}
+select.inp{max-width:420px;background:#fff}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ccard{background:#f8f9fa;border-radius:18px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.ccard.off{opacity:.45}
+.ccard .cimg{width:110px;height:110px}
+.cname{font-size:16px;font-weight:800}
+.cgrid .hint{grid-column:1/-1}
