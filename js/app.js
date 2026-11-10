@@ -95,7 +95,7 @@ function traceScreen(go, { id }) {
     h('button', { class: 'btn round', onclick: () => sayLetter(L) }, '🔊'),
     h('button', { class: 'btn round', onclick: again }, '🔄'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('trace', { id: nextLetter(id).id }); } }, '⏭️'));
-  const el = h('div', { class: 'screen' },
+  const el = h('div', { class: 'screen lay' },
     topbar(go, { title: '', right: h('button', { class: 'btn sq', onclick: () => go('pick') }, '🔠') }), stage, bar);
   tr = mountTracer(stage, L.strokes, {
     ...tracerOpts(),
@@ -106,7 +106,7 @@ function traceScreen(go, { id }) {
       const gold = hardMode() && stars === 3; // 어려움 이상에서 별 3개 = 반짝 스티커
       const isNew = addTrace(id, gold);
       addStars(stars); refreshStars();
-      timer = setTimeout(() => sayLetter(L), 500);
+      timer = setTimeout(() => sayLetter(L), 800); // 축하음이 끝난 뒤 말하기
       const m = modal(h('div', { class: 'reward' },
         h('div', { class: 'got' }, gold ? '✨ 반짝 스티커! ✨' : isNew ? '새 스티커!' : '참 잘했어요!'),
         starRow(stars),
@@ -158,7 +158,8 @@ function nameScreen(go) {
       onStroke: () => sfx('stroke'),
       onRetry: retry,
       onDone: () => {
-        sfx('win'); confetti(innerWidth / 2, innerHeight / 2, 20); speak(syls[idx], 0.7);
+        sfx('win'); confetti(innerWidth / 2, innerHeight / 2, 20);
+        const syl = syls[idx]; later(() => speak(syl, 0.7), 600);
         idx++;
         if (idx < syls.length) later(load, 1300); else later(finish, 1300);
       },
@@ -167,7 +168,7 @@ function nameScreen(go) {
 
   function finish() {
     addTrace('name'); addStars(3); refreshStars(); sfx('win'); confetti(innerWidth / 2, innerHeight / 3, 50);
-    speak(`${store.name}! 이름을 다 썼어요! 멋져요!`);
+    later(() => speak(`${store.name}! 이름을 다 썼어요! 멋져요!`), 800);
     chips.querySelectorAll('.nchip').forEach((c) => { c.classList.remove('cur'); c.classList.add('ok'); });
     const m = modal(h('div', { class: 'reward' }, h('div', { class: 'got' }, '이름 스티커!'),
       h('div', { class: 'row' }, h('div', { class: 'bigemo bounce' }, '🏅'), cheer()), h('div', { class: 'cap' }, store.name),
@@ -213,7 +214,7 @@ setInterval(() => {
 // ============ 시작 ============
 document.addEventListener('pointerdown', unlock, { passive: true });
 document.addEventListener('gesturestart', (e) => e.preventDefault());
-document.addEventListener('touchmove', (e) => { if (!e.target.closest('.scroll')) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', (e) => { if (!e.target.closest('.scroll, .modal')) e.preventDefault(); }, { passive: false });
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 

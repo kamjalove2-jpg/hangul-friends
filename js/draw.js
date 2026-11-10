@@ -46,7 +46,7 @@ export function pictureScreen(go, { id }) {
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); tr.reset(); } }, '🔄'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('draw', { pic: P.id }); } }, '🎨'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('picture', { id: next().id }); } }, '⏭️'));
-  const el = h('div', { class: 'screen' },
+  const el = h('div', { class: 'screen lay' },
     topbar(go, { title: P.emoji + ' ' + P.name, right: h('button', { class: 'btn sq', onclick: () => picker(go) }, '🖼️') }), stage, bar);
   // 그림은 정해진 획 순서가 없으므로 순서·방향은 따지지 않고 정확도만 난이도를 따름
   const lv = LEVELS[store.settings.level] || LEVELS.easy;
@@ -58,7 +58,7 @@ export function pictureScreen(go, { id }) {
       sfx('win'); confetti();
       store.pics[P.id] = (store.pics[P.id] || 0) + 1;
       addStars(stars); refreshStars(); save();
-      timer = setTimeout(() => speak(`${P.name} 완성! 멋져요!`), 400);
+      timer = setTimeout(() => speak(`${P.name} 완성! 멋져요!`), 800);
       const m = modal(h('div', { class: 'reward' },
         h('div', { class: 'got' }, '완성!'), starRow(stars),
         h('div', { class: 'row' }, h('div', { class: 'bigemo bounce' }, P.emoji), cheer()),
@@ -102,9 +102,9 @@ export function drawScreen(go, arg = {}) {
   const lineBtn = bg && bg.kind === 'img' ? h('button', { class: 'btn sq', onclick: () => { lineMode = !lineMode; sfx('tap'); paintBg(); sync(); } }, '✏️') : null;
   const doneBtn = bg ? h('button', { class: 'btn sq', onclick: () => {
     if (praised) { sfx('star'); return; }
-    praised = true; sfx('win'); confetti(); addStars(1); refreshStars(); speak('우와! 멋지게 그렸어요!');
+    praised = true; sfx('win'); confetti(); addStars(1); refreshStars(); setTimeout(() => { if (el.isConnected) speak('우와! 멋지게 그렸어요!'); }, 800);
   } }, '⭐') : null;
-  const bar = h('div', { class: 'bar' }, colBtns, sizeBtn, stampBtn, lineBtn, doneBtn, clr);
+  const bar = h('div', { class: 'bar dbar' }, colBtns, sizeBtn, stampBtn, lineBtn, doneBtn, clr);
   const sync = () => {
     colBtns.forEach((b, i) => b.classList.toggle('on', COLS[i] === col && mode === 'brush'));
     sizeBtn.style.fontSize = size === 16 ? '20px' : '40px'; stampBtn.classList.toggle('on', mode === 'stamp');
@@ -113,7 +113,7 @@ export function drawScreen(go, arg = {}) {
   const right = h('div', { class: 'row' },
     bg ? h('button', { class: 'btn sq', onclick: () => { sfx('tap'); go('draw'); } }, '⬜') : null,
     h('button', { class: 'btn sq', onclick: () => picker(go) }, '🖼️'));
-  const el = h('div', { class: 'screen' }, topbar(go, { title: '', right }), wrap, bar);
+  const el = h('div', { class: 'screen lay' }, topbar(go, { title: '', right }), wrap, bar);
 
   let W = 0, H = 0, lineCache = null;
   function paintBg() {

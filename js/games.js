@@ -9,7 +9,7 @@ const BCOL = ['#ff6b6b', '#ffa94d', '#fcc419', '#51cf66', '#339af0', '#cc5de8'];
 
 export function balloonScreen(go) {
   const ROUNDS = 5;
-  let round = 0, done = 0, target = null, locked = false, timers = [];
+  let round = 0, done = 0, target = null, locked = false, timers = [], alive = true;
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); };
   const dots = h('div', { class: 'dots' });
   const stage = h('div', { class: 'bstage' });
@@ -46,9 +46,13 @@ export function balloonScreen(go) {
       sfx('pop'); b.classList.add('pop');
       const r = b.getBoundingClientRect();
       confetti(r.left + r.width / 2, r.top + r.height / 2, 18);
-      later(() => { sayLetter(target); }, 250);
       addStars(1); refreshStars();
-      later(newRound, 2200);
+      // 글자 읽기(AI + 내 녹음)가 다 끝난 뒤 다음 문제로 (최소 2초)
+      const t0 = Date.now();
+      later(async () => {
+        await sayLetter(target);
+        if (alive) later(newRound, Math.max(400, 2200 - (Date.now() - t0)));
+      }, 250);
     } else {
       sfx('boing'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
       speak(`이건 ${l.say}. ${josa(target.say, '을', '를')} 찾아보자!`);
@@ -58,7 +62,7 @@ export function balloonScreen(go) {
   function finish() {
     sfx('win'); confetti(innerWidth / 2, innerHeight / 3, 50);
     addStars(2); refreshStars();
-    speak('우와! 모두 맞췄어요! 최고예요!');
+    later(() => speak('우와! 모두 맞췄어요! 최고예요!'), 800);
     const m = modal(h('div', { class: 'reward' },
       h('div', { class: 'row' }, h('div', { class: 'bigemo' }, '🎈🏆🎈'), cheer()), h('div', { class: 'cap' }, '별 +2 ⭐⭐'),
       h('div', { class: 'row' },
@@ -67,7 +71,7 @@ export function balloonScreen(go) {
   }
 
   newRound();
-  return { el, cleanup: () => timers.forEach(clearTimeout) };
+  return { el, cleanup: () => { alive = false; timers.forEach(clearTimeout); } };
 }
 
 // ============ 글자 블록 (자음 + 모음 = 글자) ============
@@ -106,7 +110,7 @@ export function blocksScreen(go) {
     const syl = compose(c.ch, v.ch);
     setTimeout(() => {
       sfx('merge'); result.textContent = syl; result.classList.remove('pop'); void result.offsetWidth; result.classList.add('pop');
-      speak(syl, 0.7); confetti(innerWidth / 2, innerHeight / 3, 16);
+      setTimeout(() => { if (busy) speak(syl, 0.7); }, 450); confetti(innerWidth / 2, innerHeight / 3, 16);
       addStars(1); refreshStars();
     }, 450);
   }

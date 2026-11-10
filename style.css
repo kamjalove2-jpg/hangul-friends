@@ -195,3 +195,89 @@ select.inp{max-width:420px;background:#fff}
 .ccard .cimg{width:110px;height:110px}
 .cname{font-size:16px;font-weight:800}
 .cgrid .hint{grid-column:1/-1}
+
+/* ---- 폰 화면 대응 ---- */
+.modal{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.balloon{--w:clamp(90px,min(20vw,30vh),210px)}
+.bigemo{font-size:clamp(70px,min(22vw,24vh),200px)}
+.cheer{width:clamp(80px,min(20vw,22vh),190px);height:clamp(80px,min(20vw,22vh),190px)}
+
+/* 세로 폰 */
+@media (max-width:520px){
+  .top{padding:10px 14px}
+  .btn.sq{width:54px;height:54px;font-size:28px}
+  .btn.round{width:70px;height:70px;font-size:34px}
+  .bar{gap:12px;padding:10px 12px 14px}
+  .today{margin:4px 14px 12px;padding:10px 14px;gap:10px}
+  .tg{padding:0 16px}
+  .tgo{width:50px;height:50px;font-size:28px}
+  .te{font-size:44px}
+  .homechar{width:56px;height:56px}
+  .menu{gap:12px;padding:0 14px 10px}
+  .foot{flex-wrap:wrap;justify-content:center;padding:4px 10px 10px;gap:6px}
+  .stamps{gap:5px;width:100%;justify-content:center}
+  .day{width:auto;flex:1;max-width:46px;font-size:18px}
+  .prog{font-size:16px}
+  .tstage{margin:0 12px 12px}
+  .dwrap{margin:0 12px}
+  .cbtn{width:46px;height:46px}
+  .modal{padding:22px 20px;border-radius:28px}
+  .got,.cap{font-size:28px}
+  .starrow{font-size:32px}
+  .pickgrid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+  .pke{font-size:38px}
+  .picker{min-width:0}
+  .ppage{padding:0 12px 24px}
+  .psec{padding:12px 14px}
+  .rrow{flex-wrap:wrap}
+  .rnm{min-width:120px}
+  .gopts{flex-wrap:wrap;justify-content:center}
+  .sgrid,.pgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;padding:6px 12px 20px}
+  .pg{font-size:56px}.scard .semo{font-size:52px}
+}
+
+/* 가로 폰 (키가 낮은 화면): 버튼을 오른쪽으로 보내고 그림판을 크게 */
+@media (orientation:landscape) and (max-height:520px){
+  .top{padding:6px 14px}
+  .btn.sq{width:48px;height:48px;font-size:24px;border-radius:16px}
+  .btn.round{width:58px;height:58px;font-size:28px}
+  .chip{font-size:18px;padding:6px 12px}
+  .ttl{font-size:22px}.logo{font-size:28px}
+  .tab{font-size:20px;padding:6px 14px}
+  .screen.lay{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr)}
+  .screen.lay>.top{grid-column:1/-1}
+  .screen.lay>.tstage,.screen.lay>.dwrap{grid-column:1;grid-row:2;margin:0 8px 10px 16px}
+  .screen.lay>.bar{grid-column:2;grid-row:2;display:grid;grid-auto-flow:row;grid-template-columns:auto;align-content:center;justify-items:center;gap:6px;padding:0 16px 8px 6px}
+  .screen.lay>.bar.dbar{grid-template-columns:repeat(3,auto);gap:8px}
+  .cbtn{width:44px;height:44px;font-size:20px;border-width:3px}
+  .namechips .nchip{font-size:24px;padding:2px 12px}
+  /* 홈 */
+  .today{margin:2px 16px 8px;padding:6px 18px;gap:14px;border-radius:24px}
+  .tg{font-size:clamp(36px,13vh,96px);padding:0 18px;border-radius:18px}
+  .te{font-size:clamp(32px,11vh,80px)}
+  .tgo{width:48px;height:48px;font-size:26px}
+  .homechar{width:56px;height:56px}
+  .menu{grid-template-columns:repeat(6,1fr);gap:10px;padding:0 16px 6px}
+  .mbtn{border-radius:22px}
+  .me{font-size:clamp(34px,13vh,110px)}
+  .ml{font-size:15px}
+  .foot{padding:2px 20px 6px}
+  .day{width:40px;font-size:16px;border-radius:10px}
+  .prog{font-size:16px}
+  /* 블록 */
+  .slot{width:clamp(70px,min(20vw,26vh),190px);font-size:clamp(44px,min(13vw,17vh),130px);border-radius:22px}
+  .tiles{padding:4px 10px 8px;gap:6px}
+  .trow{gap:6px;flex-wrap:nowrap}
+  .tile{width:clamp(36px,min(6.2vw,11vh),84px);height:clamp(36px,min(6.2vw,11vh),84px);font-size:clamp(22px,min(4vw,7vh),48px);border-radius:12px}
+  /* 모달 */
+  .modal{padding:14px 24px;border-radius:26px}
+  .reward{gap:6px}
+  .got,.cap{font-size:24px}
+  .starrow{font-size:26px}
+  .bigemo{font-size:clamp(60px,26vh,200px)}
+  .cheer{width:26vh;height:26vh}
+  .pickgrid{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+  .pke{font-size:34px}
+  .board,.dwrap{margin:0 14px 8px}
+  .sgrid,.pgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+}

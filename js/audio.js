@@ -43,6 +43,8 @@ function tone(freq, t0, dur, type = 'sine', vol = 0.3) {
 
 export function sfx(name) {
   unlock();
+  // 성공 효과음이 나면 하던 말은 바로 멈춤 (말소리 + 축하음 + 다음 말소리 겹침 방지)
+  if (name === 'win' || name === 'pop' || name === 'merge') stopVoice();
   switch (name) {
     case 'tap': tone(660, 0, 0.1, 'triangle'); break;
     case 'stroke': tone(784, 0, 0.12); tone(988, 0.09, 0.16); break;
@@ -73,29 +75,45 @@ export function pickVoice() {
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.addEventListener?.('voiceschanged', pickVoice); }
 
-let seq = 0, curSrc = null;
+// 목소리는 한 번에 하나만: 새 말이 시작되면 seq가 바뀌고, 이전 말·녹음은 멈추고 이어지지 않음
+let seq = 0, curSrc = null, cancelAt = 0;
 const player = new Audio();
+const busy = () => { try { return speechSynthesis.speaking || speechSynthesis.pending; } catch { return false; } };
 
 export function stopVoice() {
   seq++;
-  try { speechSynthesis.cancel(); } catch { /* 무시 */ }
+  try { if (busy()) { speechSynthesis.cancel(); cancelAt = performance.now(); } } catch { /* 무시 */ }
   try { if (curSrc) curSrc.stop(); } catch { /* 무시 */ }
   curSrc = null;
   try { player.pause(); } catch { /* 무시 */ }
 }
 
-// 말하기 (끝나면 resolve). iOS는 onend가 가끔 안 와서 시간 제한을 둠
+// 말하기 (실제로 다 말한 뒤 resolve)
 function say(text, rate = 0.8) {
+  const my = seq;
   return new Promise((res) => {
     if (!store.settings.sound || !('speechSynthesis' in window) || !text) return res();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ko-KR'; if (voice) u.voice = voice;
-    u.rate = rate; u.pitch = 1.1; u.volume = 1;
-    let done = false;
-    const t = setTimeout(() => fin(), 1500 + (text.length * 320) / rate);
-    const fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
-    u.onend = fin; u.onerror = fin;
-    speechSynthesis.speak(u);
+    let done = false, poll = 0, t = 0;
+    const fin = () => { if (!done) { done = true; clearTimeout(t); clearInterval(poll); res(); } };
+    const go = () => {
+      if (my !== seq) return fin(); // 기다리는 사이 다른 말이 시작됨
+      if (busy()) speechSynthesis.cancel(); // iOS: 취소가 덜 된 경우 한 번 더
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR'; if (voice) u.voice = voice;
+      u.rate = rate; u.pitch = 1.1; u.volume = 1;
+      u.onend = fin; u.onerror = fin;
+      speechSynthesis.speak(u);
+      const t0 = performance.now();
+      // iOS는 onend가 가끔 안 옴: 말이 끝났는지 직접 확인 + 최대 시간 제한
+      poll = setInterval(() => {
+        if (my !== seq) return fin();
+        if (performance.now() - t0 > 700 && !busy()) fin();
+      }, 200);
+      t = setTimeout(fin, 2500 + (text.length * 450) / rate);
+    };
+    // iOS Safari는 cancel 직후 바로 speak하면 말이 씹히거나 겹치는 경우가 있어 잠깐 쉼
+    const gap = 150 - (performance.now() - cancelAt);
+    if (gap > 0) setTimeout(go, gap); else go();
   });
 }
 
