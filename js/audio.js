@@ -53,6 +53,7 @@ export function sfx(name) {
     case 'boing': tone(260, 0, 0.16); tone(190, 0.12, 0.22); break;
     case 'star': tone(1047, 0, 0.1); tone(1568, 0.08, 0.22); break;
     case 'merge': tone(440, 0, 0.12, 'triangle'); tone(660, 0.1, 0.12, 'triangle'); tone(880, 0.2, 0.25, 'triangle'); break;
+    case 'fill': tone(392, 0, 0.08, 'sine', 0.28); tone(784, 0.05, 0.16, 'sine', 0.28); break;
     case 'soft': tone(523, 0, 0.14, 'triangle', 0.22); tone(659, 0.12, 0.2, 'triangle', 0.22); break;
   }
 }

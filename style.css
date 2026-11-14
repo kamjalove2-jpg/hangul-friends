@@ -297,3 +297,8 @@ select.inp{max-width:420px;background:#fff}
 .lchips .lsel{font-size:17px;padding:6px 10px;width:auto}
 @media (orientation:landscape) and (max-height:520px){.techar{width:11vh;height:11vh}}
 .ccard .row{flex-wrap:wrap;justify-content:center;gap:6px}.ccard .btn.small{white-space:nowrap;padding:6px 10px}
+@media (orientation:landscape) and (max-height:520px){
+  .screen.lay>.bar.dbar{grid-template-columns:repeat(4,auto);gap:6px;align-content:center}
+  .dbar .cbtn{width:40px;height:40px}
+  .dbar .btn.sq{width:42px;height:42px;font-size:22px}
+}

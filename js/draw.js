@@ -4,6 +4,7 @@ import { h, topbar, confetti, modal, toast, refreshStars, cheer, starRow } from 
 import { mountTracer, LEVELS } from './trace.js';
 import { PICTURES, PIC_BY } from './pictures.js';
 import { chars, charEl, outline, fileToCanvas } from './chars.js';
+import { floodFill, hexRgb } from './fill.js';
 
 let photo = null; // 마지막으로 고른 사진 { url, img } (앱을 닫으면 사라짐, 저장 안 함)
 
@@ -44,7 +45,7 @@ export function pictureScreen(go, { id }) {
   const bar = h('div', { class: 'bar' },
     h('button', { class: 'btn round', onclick: () => speak(josa(P.name, '을', '를') + ' 그려 볼까?') }, '🔊'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); tr.reset(); } }, '🔄'),
-    h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('draw', { pic: P.id }); } }, '🎨'),
+    h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('draw', { pic: P.id, fill: true }); } }, '🎨'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('picture', { id: next().id }); } }, '⏭️'));
   const el = h('div', { class: 'screen lay' },
     topbar(go, { title: P.emoji + ' ' + P.name, right: h('button', { class: 'btn sq', onclick: () => picker(go) }, '🖼️') }), stage, bar);
@@ -65,7 +66,7 @@ export function pictureScreen(go, { id }) {
         h('div', { class: 'cap' }, P.name),
         h('div', { class: 'row' },
           h('button', { class: 'btn round', onclick: () => { m.close(); go('picture', { id: P.id }); } }, '🔁'),
-          h('button', { class: 'btn round', onclick: () => { m.close(); go('draw', { pic: P.id }); } }, '🎨'),
+          h('button', { class: 'btn round', onclick: () => { m.close(); go('draw', { pic: P.id, fill: true }); } }, '🎨'),
           h('button', { class: 'btn round primary', onclick: () => { m.close(); go('picture', { id: next().id }); } }, '➡️'))),
       { dismiss: false });
     },
@@ -77,9 +78,13 @@ export function pictureScreen(go, { id }) {
 // ============ 그리기 (자유 / 밑그림 위에) ============
 const STAMPS = ['🦖', '🚗', '🐘', '🚒', '🦁', '🚀', '🐢', '🚜', '🦕', '🐯', '✈️', '🐧'];
 const COLS = ['rainbow', '#ff6b6b', '#ffa94d', '#fcc419', '#51cf66', '#339af0', '#9775fa', '#343a40'];
+// 🌈로 채울 때 차례로 쓰는 밝은 색
+const FILLS = ['#ff8787', '#ffc078', '#ffe066', '#8ce99a', '#74c0fc', '#b197fc', '#f783ac', '#63e6be'];
+const UNDO_MAX = 10, UNDO_BYTES = 60e6; // 되돌리기: 최대 10번, 메모리 60MB까지
 
 export function drawScreen(go, arg = {}) {
-  let col = 'rainbow', size = 16, mode = 'brush', hue = 0, down = false, last = null, pid = null;
+  let col = 'rainbow', size = 16, mode = arg.fill ? 'fill' : 'brush', hue = 0, down = false, last = null, pid = null;
+  let fillN = 0, undos = [], pre = null, box = null;
   // 밑그림 정하기
   let bg = null;
   if (arg.pic && PIC_BY[arg.pic]) bg = { kind: 'pic', p: PIC_BY[arg.pic] };
@@ -94,20 +99,27 @@ export function drawScreen(go, arg = {}) {
 
   const colBtns = COLS.map((c) => h('button', {
     class: 'cbtn' + (c === col ? ' on' : ''), style: c === 'rainbow' ? '' : `background:${c}`,
-    onclick: () => { sfx('tap'); col = c; mode = 'brush'; sync(); },
+    onclick: () => { sfx('tap'); col = c; if (mode === 'stamp') mode = 'brush'; sync(); },
   }, c === 'rainbow' ? '🌈' : ''));
-  const sizeBtn = h('button', { class: 'btn sq', onclick: () => { size = size === 16 ? 34 : 16; sync(); } }, '●');
+  const sizeBtn = h('button', { class: 'btn sq', onclick: () => { size = size === 16 ? 34 : 16; if (mode !== 'brush') mode = 'brush'; sync(); } }, '●');
   const stampBtn = h('button', { class: 'btn sq', onclick: () => { mode = mode === 'stamp' ? 'brush' : 'stamp'; sync(); } }, '🦖');
-  const clr = h('button', { class: 'btn sq', onclick: () => { sfx('pop'); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.restore(); } }, '🗑️');
+  const fillBtn = h('button', { class: 'btn sq', onclick: () => { sfx('tap'); mode = mode === 'fill' ? 'brush' : 'fill'; sync(); } }, '🪣');
+  const undoBtn = h('button', { class: 'btn sq', onclick: () => undo() }, '↩️');
+  const clr = h('button', { class: 'btn sq', onclick: () => {
+    sfx('pop'); pushUndo({ x: 0, y: 0, w: cv.width, h: cv.height, data: ctx.getImageData(0, 0, cv.width, cv.height) });
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.restore();
+  } }, '🗑️');
   const lineBtn = bg && bg.kind === 'img' ? h('button', { class: 'btn sq', onclick: () => { lineMode = !lineMode; sfx('tap'); paintBg(); sync(); } }, '✏️') : null;
   const doneBtn = bg ? h('button', { class: 'btn sq', onclick: () => {
     if (praised) { sfx('star'); return; }
     praised = true; sfx('win'); confetti(); addStars(1); refreshStars(); setTimeout(() => { if (el.isConnected) speak('우와! 멋지게 그렸어요!'); }, 800);
   } }, '⭐') : null;
-  const bar = h('div', { class: 'bar dbar' }, colBtns, sizeBtn, stampBtn, lineBtn, doneBtn, clr);
+  const bar = h('div', { class: 'bar dbar' }, colBtns, sizeBtn, fillBtn, stampBtn, lineBtn, doneBtn, undoBtn, clr);
   const sync = () => {
-    colBtns.forEach((b, i) => b.classList.toggle('on', COLS[i] === col && mode === 'brush'));
+    colBtns.forEach((b, i) => b.classList.toggle('on', COLS[i] === col && mode !== 'stamp'));
     sizeBtn.style.fontSize = size === 16 ? '20px' : '40px'; stampBtn.classList.toggle('on', mode === 'stamp');
+    fillBtn.classList.toggle('on', mode === 'fill');
+    undoBtn.disabled = !undos.length; undoBtn.style.opacity = undos.length ? 1 : 0.4;
     if (lineBtn) lineBtn.classList.toggle('on', lineMode);
   };
   const right = h('div', { class: 'row' },
@@ -154,13 +166,54 @@ export function drawScreen(go, arg = {}) {
     W = w; H = hh; paintBg();
   };
   const ro = new ResizeObserver(fit); ro.observe(wrap);
+
+  // ---- 되돌리기: 바뀐 사각형만 저장 ----
+  function pushUndo(u) {
+    if (!u) return;
+    undos.push(u);
+    let bytes = undos.reduce((a, x) => a + x.data.data.length, 0);
+    while (undos.length > UNDO_MAX || (bytes > UNDO_BYTES && undos.length > 1)) bytes -= undos.shift().data.data.length;
+    sync();
+  }
+  function undo() {
+    const u = undos.pop();
+    if (!u) { sfx('boing'); return; }
+    sfx('tap'); ctx.putImageData(u.data, u.x, u.y); sync();
+  }
+  const dpr = () => cv.width / (W || 1);
+  // 그리기 시작 전 상태를 들고 있다가, 끝나면 그린 범위만 잘라 저장
+  const grow = (p, r) => { box = box ? [Math.min(box[0], p.x - r), Math.min(box[1], p.y - r), Math.max(box[2], p.x + r), Math.max(box[3], p.y + r)] : [p.x - r, p.y - r, p.x + r, p.y + r]; };
+  function endStroke() {
+    if (!pre || !box) { pre = box = null; return; }
+    const k = dpr();
+    const x = Math.max(0, Math.floor(box[0] * k)), y = Math.max(0, Math.floor(box[1] * k));
+    const w = Math.min(cv.width, Math.ceil(box[2] * k)) - x, hh = Math.min(cv.height, Math.ceil(box[3] * k)) - y;
+    if (w > 0 && hh > 0) {
+      const t = document.createElement('canvas'); t.width = cv.width; t.height = cv.height;
+      const tc = t.getContext('2d'); tc.putImageData(pre, 0, 0);
+      pushUndo({ x, y, w, h: hh, data: tc.getImageData(x, y, w, hh) });
+    }
+    pre = box = null;
+  }
+
+  function doFill(p) {
+    const k = dpr();
+    const c = col === 'rainbow' ? FILLS[fillN++ % FILLS.length] : col;
+    const useBg = !!bg && (bg.kind === 'pic' || lineMode);
+    const u = floodFill(ctx, bctx, p.x * k, p.y * k, hexRgb(c), useBg);
+    if (u) { pushUndo(u); sfx('fill'); } else sfx('boing');
+  }
   const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   const style = () => { ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = size; ctx.strokeStyle = col === 'rainbow' ? `hsl(${hue} 90% 55%)` : col; };
 
   cv.addEventListener('pointerdown', (e) => {
     if (down) return;
-    e.preventDefault(); down = true; pid = e.pointerId; cv.setPointerCapture(pid); last = pos(e);
+    e.preventDefault(); last = pos(e);
+    if (mode === 'fill') { doFill(last); return; }
+    down = true; pid = e.pointerId; cv.setPointerCapture(pid);
+    pre = ctx.getImageData(0, 0, cv.width, cv.height); box = null;
     if (mode === 'stamp') {
+      grow(last, 60);
       // 도장: 이모지 + 내 캐릭터 중에서 무작위
       const mine = chars().filter((c) => c.img);
       const n = STAMPS.length + mine.length, r = Math.floor(Math.random() * n);
@@ -170,16 +223,16 @@ export function drawScreen(go, arg = {}) {
       } else {
         ctx.font = '90px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(STAMPS[r], last.x, last.y);
       }
-      sfx('tap'); return;
+      sfx('tap'); endStroke(); return;
     }
-    style(); ctx.beginPath(); ctx.arc(last.x, last.y, size / 2, 0, 7); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+    grow(last, size); style(); ctx.beginPath(); ctx.arc(last.x, last.y, size / 2, 0, 7); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
   });
   cv.addEventListener('pointermove', (e) => {
     if (!down || e.pointerId !== pid || mode === 'stamp') return;
-    const p = pos(e); hue = (hue + 3) % 360; style();
+    const p = pos(e); hue = (hue + 3) % 360; style(); grow(p, size);
     ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p;
   });
-  const up = (e) => { if (e.pointerId === pid) { down = false; pid = null; } };
+  const up = (e) => { if (e.pointerId === pid) { down = false; pid = null; if (mode !== 'stamp') endStroke(); } };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   sync();
   return { el, cleanup: () => ro.disconnect() };
