@@ -1,13 +1,13 @@
-// 전체 백업: 부모 설정 + 내 캐릭터 + 내 녹음 (+ 진행도)을 파일 하나로. 서버 없이 기기끼리 옮길 때 사용.
+// 전체 백업: 부모 설정 + 내 캐릭터 + 내 녹음 + 음성 파일 (+ 진행도)을 파일 하나로. 서버 없이 기기끼리 옮길 때 사용.
 import { store, save } from './store.js';
 import { allChars, addChar, delChar, setHidden } from './chars.js';
-import { recEntries, saveRec, delRec, applyVolume, pickVoice } from './audio.js';
+import { recEntries, saveRec, delRec, clipEntries, saveClip, delClip, applyVolume, pickVoice } from './audio.js';
 
 const blobToData = (b) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
 const dataToBlob = async (d) => (await fetch(d)).blob();
 
 // AI 목소리는 기기마다 설치된 목소리가 달라 옮기지 않음
-const SETTING_KEYS = ['limit', 'level', 'sound', 'vol', 'play'];
+const SETTING_KEYS = ['limit', 'level', 'sound', 'vol', 'play', 'clips'];
 const PROGRESS_KEYS = ['stickers', 'stars', 'days', 'pics', 'board', 'bg'];
 
 export async function exportAll({ progress = true } = {}) {
@@ -17,6 +17,8 @@ export async function exportAll({ progress = true } = {}) {
   if (progress) { out.progress = {}; PROGRESS_KEYS.forEach((k) => { out.progress[k] = store[k]; }); }
   for (const c of allChars()) out.chars.push({ name: c.name, hidden: c.hidden, letter: c.letter, mode: c.mode, data: await blobToData(c.blob) });
   for (const [id, blob] of recEntries()) out.recs.push({ id, data: await blobToData(blob) });
+  out.voices = [];
+  for (const [key, blob] of clipEntries()) out.voices.push({ key, data: await blobToData(blob) });
   return new Blob([JSON.stringify(out)], { type: 'application/json' });
 }
 
@@ -46,7 +48,7 @@ function mergeProgress(p) {
 
 // mode: 'merge' = 기존 유지 + 새 것 더하기, 'replace' = 이 기기 내용을 백업으로 바꾸기
 export async function importAll(j, mode = 'merge') {
-  const r = { chars: 0, recs: 0, settings: false, progress: false };
+  const r = { chars: 0, recs: 0, voices: 0, settings: false, progress: false };
   if (j.settings) {
     SETTING_KEYS.forEach((k) => { if (j.settings[k] !== undefined) store.settings[k] = j.settings[k]; });
     r.settings = true;
@@ -75,6 +77,14 @@ export async function importAll(j, mode = 'merge') {
     if (!it.id || !it.data) continue;
     await saveRec(it.id, await dataToBlob(it.data));
     r.recs++;
+  }
+
+  // 음성 파일(클로바더빙 등): 같은 문장은 백업 쪽으로
+  if (mode === 'replace') for (const [k] of clipEntries()) await delClip(k);
+  for (const it of j.voices || []) {
+    if (!it.key || !it.key.startsWith('V:') || !it.data) continue;
+    await saveClip(it.key, await dataToBlob(it.data));
+    r.voices++;
   }
   return r;
 }

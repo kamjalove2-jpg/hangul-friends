@@ -302,3 +302,13 @@ select.inp{max-width:420px;background:#fff}
   .dbar .cbtn{width:40px;height:40px}
   .dbar .btn.sq{width:42px;height:42px;font-size:22px}
 }
+
+/* ---- 음성 파일 목록 ---- */
+.clist{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;margin-top:6px}
+.cgt{font-weight:900;font-size:16px;margin-top:8px}
+.crow{display:flex;align-items:center;gap:8px;padding:2px 0}
+.crow .cst{width:20px;text-align:center;color:#adb5bd;font-weight:900}
+.crow.ok .cst{color:#2b8a3e}
+.crow .ctx{flex:1;font-size:17px}
+.crow .btn.small{min-height:38px;padding:4px 10px}
+.crow .btn.small:disabled{opacity:.35}

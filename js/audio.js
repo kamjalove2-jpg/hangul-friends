@@ -1,5 +1,6 @@
 import { store } from './store.js';
 import { idb, allEntries } from './db.js';
+import { splitClips, clipKey } from './voices.js';
 
 // iPad가 앱 소리를 "미디어 재생"으로 다루도록 (무음 스위치·벨소리 음량 영향 줄이기, Safari 17+)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* 무시 */ }
@@ -90,8 +91,13 @@ export function stopVoice() {
 }
 
 // 말하기 (실제로 다 말한 뒤 resolve)
+// 넣어 둔 음성 파일(클로바더빙 등)로 문장 전체를 만들 수 있으면 그 파일들을 이어서 재생, 아니면 기기 AI 목소리
 function say(text, rate = 0.8) {
   const my = seq;
+  if (store.settings.sound && store.settings.clips !== false) {
+    const parts = splitClips(text, (k) => !!recs[k]);
+    if (parts) return playClips(parts, my);
+  }
   return new Promise((res) => {
     if (!store.settings.sound || !('speechSynthesis' in window) || !text) return res();
     let done = false, poll = 0, t = 0;
@@ -124,6 +130,14 @@ export function speak(text, rate = 0.8) {
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function playClips(keys, my) {
+  for (let i = 0; i < keys.length; i++) {
+    if (my !== seq) return;
+    if (i) await wait(80);
+    await playRec(keys[i], my);
+  }
+}
 
 // 글자 읽어주기. 재생 방식(설정): both = AI 다음 부모 녹음, rec = 녹음만, ai = AI만
 export async function sayLetter(l, full = true) {
@@ -215,6 +229,19 @@ export async function saveRec(id, blob) {
 export async function delRec(id) {
   await idb('rec', 'readwrite', (s) => s.delete('L:' + id));
   delete recs['L:' + id];
+}
+
+// ---------- 음성 파일(조각) 저장: 키 'V:문장' ----------
+export const hasClip = (text) => !!recs[clipKey(text)];
+export const playClip = (text) => { stopVoice(); return playRec(clipKey(text), seq); };
+export const clipEntries = () => Object.entries(recs).filter(([k]) => k.startsWith('V:')).map(([k, r]) => [k, r.blob]);
+export async function saveClip(key, blob) {
+  await idb('rec', 'readwrite', (s) => s.put(blob, key));
+  await prepare(key, blob);
+}
+export async function delClip(key) {
+  await idb('rec', 'readwrite', (s) => s.delete(key));
+  delete recs[key];
 }
 
 // 받침에 맞는 조사 고르기: josa('아', '을', '를') → '아를'

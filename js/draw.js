@@ -1,5 +1,5 @@
 import { store, save, addStars } from './store.js';
-import { sfx, speak, josa } from './audio.js';
+import { sfx, speak } from './audio.js';
 import { h, topbar, confetti, modal, toast, refreshStars, cheer, starRow } from './ui.js';
 import { mountTracer, LEVELS } from './trace.js';
 import { PICTURES, PIC_BY } from './pictures.js';
@@ -43,7 +43,7 @@ export function pictureScreen(go, { id }) {
   let tr, timer;
   const next = () => PICTURES[(PICTURES.indexOf(P) + 1) % PICTURES.length];
   const bar = h('div', { class: 'bar' },
-    h('button', { class: 'btn round', onclick: () => speak(josa(P.name, '을', '를') + ' 그려 볼까?') }, '🔊'),
+    h('button', { class: 'btn round', onclick: () => speak(P.name + ' 그려 볼까?') }, '🔊'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); tr.reset(); } }, '🔄'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('draw', { pic: P.id, fill: true }); } }, '🎨'),
     h('button', { class: 'btn round', onclick: () => { sfx('tap'); go('picture', { id: next().id }); } }, '⏭️'));
@@ -71,7 +71,7 @@ export function pictureScreen(go, { id }) {
       { dismiss: false });
     },
   });
-  timer = setTimeout(() => speak(josa(P.name, '을', '를') + ' 그려 볼까?'), 400);
+  timer = setTimeout(() => speak(P.name + ' 그려 볼까?'), 400);
   return { el, cleanup: () => { clearTimeout(timer); tr.destroy(); } };
 }
 

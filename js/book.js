@@ -1,6 +1,7 @@
 import { LETTERS, BY } from './data.js';
 import { store, save, today, resetAll } from './store.js';
-import { sfx, sayLetter, speak, hasRec, startRec, saveRec, delRec, applyVolume, koVoices, pickVoice } from './audio.js';
+import { sfx, sayLetter, speak, hasRec, startRec, saveRec, delRec, applyVolume, koVoices, pickVoice, hasClip, playClip, saveClip, delClip } from './audio.js';
+import { CLIP_GROUPS, CLIPS, clipKey, matchFile, phraseListText } from './voices.js';
 import { h, topbar, gate, toast, modal } from './ui.js';
 import { LEVEL_NAMES } from './trace.js';
 import { allChars, chars, charEl, addChar, delChar, setHidden, setLink, skin, art, fileToCanvas, removeBg, canvasBlob } from './chars.js';
@@ -122,6 +123,7 @@ export function parentScreen(go) {
         seg([['normal', '보통'], ['loud', '크게'], ['max', '아주 크게']], s.vol, (v) => { s.vol = v; applyVolume(); sfx('win'); })),
       h('p', { class: 'hint' }, 'AI 목소리는 iPad 볼륨을 따라가요. 작으면 iPad 옆 볼륨 버튼으로 올려 주세요.')),
     sec('AI 목소리', voiceBox()),
+    sec('🎙️ 음성 파일 (클로바더빙 등으로 만든 목소리)', clipBox()),
     sec('글자 읽어주기 방식 (녹음이 있는 글자)',
       seg([['both', 'AI 다음 내 녹음'], ['rec', '내 녹음만'], ['ai', 'AI만']], s.play, (v) => { s.play = v; })),
     sec('아이 이름 (이름 쓰기 놀이)', (() => {
@@ -183,6 +185,65 @@ export function parentScreen(go) {
     return box;
   }
 
+  function clipBox() {
+    const box = h('div', {});
+    const count = h('b', {});
+    const report = h('p', { class: 'hint' });
+    const list = h('div', { class: 'clist' });
+    const multi = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.wav', multiple: true, style: 'display:none' });
+    const one = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.wav', style: 'display:none' });
+    let target = null; // 하나씩 넣을 문장
+    const refresh = () => {
+      count.textContent = `${CLIPS.filter(hasClip).length} / ${CLIPS.length}개 들어 있음`;
+      list.innerHTML = '';
+      CLIP_GROUPS.forEach((g) => {
+        list.append(h('div', { class: 'cgt' }, g.title));
+        g.items.forEach((t) => {
+          const ok = hasClip(t);
+          list.append(h('div', { class: 'crow' + (ok ? ' ok' : '') },
+            h('span', { class: 'cst' }, ok ? '✓' : '·'), h('span', { class: 'ctx' }, t),
+            h('button', { class: 'btn small', disabled: !ok, onclick: () => playClip(t) }, '▶'),
+            h('button', { class: 'btn small', onclick: () => { target = t; one.click(); } }, '📂'),
+            h('button', { class: 'btn small', disabled: !ok, onclick: async () => { await delClip(clipKey(t)); refresh(); } }, '🗑')));
+        });
+      });
+    };
+    multi.addEventListener('change', async () => {
+      const files = [...(multi.files || [])]; multi.value = '';
+      if (!files.length) return;
+      const miss = [];
+      let n = 0;
+      for (const f of files) {
+        const t = matchFile(f.name);
+        if (!t) { miss.push(f.name); continue; }
+        try { await saveClip(clipKey(t), f); n++; } catch { miss.push(f.name); }
+      }
+      refresh();
+      toast(`음성 파일 ${n}개를 넣었어요`, 2500);
+      report.textContent = miss.length ? `문장을 찾지 못한 파일 ${miss.length}개: ${miss.slice(0, 8).join(', ')}${miss.length > 8 ? ' …' : ''} → 파일 이름을 문장과 같게 바꾸거나, 아래 목록의 📂로 하나씩 넣어 주세요.` : '';
+    });
+    one.addEventListener('change', async () => {
+      const f = one.files && one.files[0]; one.value = '';
+      if (!f || !target) return;
+      try { await saveClip(clipKey(target), f); toast(`"${target}" 넣었어요`); playClip(target); } catch { toast('넣지 못했어요'); }
+      refresh();
+    });
+    const listBtn = h('button', { class: 'btn small', onclick: () => {
+      saveFile(new Blob([phraseListText()], { type: 'text/plain' }), 'hangul-voice-phrases.txt');
+    } }, '📄 문장 목록 받기');
+    box.append(
+      h('p', { class: 'hint' }, '클로바더빙 같은 곳에서 만든 목소리 파일을 넣으면, 그 문장들로 읽을 수 있는 말은 이 목소리로 나와요. 없는 문장(아이 이름, 캐릭터 이름 등)이 섞인 말은 AI 목소리로 읽어요. 파일은 이 기기 안에만 저장되고 전체 백업에 함께 담겨요.'),
+      h('div', { class: 'row wrap' }, h('b', {}, '사용'),
+        seg([[true, '켜짐'], [false, '꺼짐']], s.clips !== false, (v) => { s.clips = v; })),
+      h('div', { class: 'gap' }),
+      h('div', { class: 'row wrap' }, listBtn,
+        h('button', { class: 'btn small primary', onclick: () => multi.click() }, '📂 음성 파일 넣기 (여러 개)'), count),
+      h('p', { class: 'hint' }, '만드는 법: ① 📄 문장 목록을 받아 ② 클로바더빙에서 같은 목소리로 한 줄씩 만들고 ③ 파일 이름을 문장 그대로 저장(예: 기역.mp3, 어디 있을까.mp3) ④ 📂 음성 파일 넣기에서 한꺼번에 고르기'),
+      report, list, multi, one);
+    refresh();
+    return box;
+  }
+
   function backupBox() {
     const prog = h('input', { type: 'checkbox', checked: true });
     const jin = h('input', { type: 'file', accept: 'application/json,.json', style: 'display:none' });
@@ -196,12 +257,12 @@ export function parentScreen(go) {
       if (!f) return;
       let j;
       try { j = await readBackup(f); } catch { toast('한글 친구들 백업 파일이 아니에요'); return; }
-      const what = [j.settings && '부모 설정', j.chars.length && `캐릭터 ${j.chars.length}개`, j.recs && j.recs.length && `녹음 ${j.recs.length}개`, j.progress && '스티커·별 기록'].filter(Boolean).join(', ');
+      const what = [j.settings && '부모 설정', j.chars.length && `캐릭터 ${j.chars.length}개`, j.recs && j.recs.length && `녹음 ${j.recs.length}개`, j.voices && j.voices.length && `음성 파일 ${j.voices.length}개`, j.progress && '스티커·별 기록'].filter(Boolean).join(', ');
       const run = async (mode) => {
         m.close();
         try {
           const r = await importAll(j, mode);
-          toast(`불러왔어요! 캐릭터 ${r.chars}개, 녹음 ${r.recs}개`, 3000);
+          toast(`불러왔어요! 캐릭터 ${r.chars}개, 녹음 ${r.recs}개, 음성 파일 ${r.voices}개`, 3000);
           go('parent');
         } catch { toast('불러오는 중 문제가 생겼어요'); }
       };

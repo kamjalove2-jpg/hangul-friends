@@ -1,6 +1,6 @@
 import { LETTERS, BY, compose } from './data.js';
 import { store, addStars, save } from './store.js';
-import { sfx, speak, sayLetter, josa } from './audio.js';
+import { sfx, speak, sayLetter } from './audio.js';
 import { h, shuffle, topbar, confetti, modal, refreshStars, cheer } from './ui.js';
 import { skin, charEl } from './chars.js';
 
@@ -64,7 +64,7 @@ export function balloonScreen(go) {
       }, 250);
     } else {
       sfx('boing'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-      speak(`이건 ${l.say}. ${josa(target.say, '을', '를')} 찾아보자!`);
+      speak(`이건 ${l.say}. ${target.say} 찾아보자!`);
     }
   }
 

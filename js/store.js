@@ -8,7 +8,7 @@ const def = () => ({
   bonus: {}, // 하루 추가 분
   name: '',
   // level: easy|normal|hard|expert, vol: normal|loud|max, voice: TTS voiceURI('' = 자동), play: both|rec|ai
-  settings: { limit: 20, level: 'easy', sound: true, vol: 'loud', voice: '', play: 'both' },
+  settings: { limit: 20, level: 'easy', sound: true, vol: 'loud', voice: '', play: 'both', clips: true },
   board: {},
   pics: {}, // 따라 그리기 완성 횟수 { 'car': 2 }
   bg: 'meadow',
