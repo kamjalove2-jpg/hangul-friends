@@ -1,5 +1,5 @@
 // 오프라인 지원: 캐시 우선 + 백그라운드 갱신. 파일을 바꾸면 VERSION을 올려주세요.
-const VERSION = 'hangul-v6';
+const VERSION = 'hangul-v7';
 const ASSETS = ['./', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/data.js', 'js/store.js', 'js/audio.js', 'js/trace.js', 'js/ui.js', 'js/games.js', 'js/book.js',
   'js/db.js', 'js/chars.js', 'js/draw.js', 'js/pictures.js', 'js/backup.js', 'js/fill.js', 'js/voices.js',

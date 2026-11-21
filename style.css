@@ -312,3 +312,21 @@ select.inp{max-width:420px;background:#fff}
 .crow .ctx{flex:1;font-size:17px}
 .crow .btn.small{min-height:38px;padding:4px 10px}
 .crow .btn.small:disabled{opacity:.35}
+
+/* ---- 그리기 확대·팔레트 ---- */
+.dstage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.colrow{display:contents}
+.cbtn.white,.pcol.white{box-shadow:var(--shadow),inset 0 0 0 2px #dee2e6}
+.zoomctl{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;z-index:2;opacity:.55;transition:opacity .2s}
+.zoomctl.zoomed{opacity:1}
+.zbtn{border:0;border-radius:14px;background:#fff;box-shadow:0 3px 0 rgba(0,0,0,.12);min-width:44px;height:44px;font-size:20px;padding:0 8px}
+.zbtn.zl{font-size:16px;font-weight:900}
+.palette{display:flex;flex-direction:column;gap:12px}
+.palgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.pcol{width:clamp(40px,7vw,58px);height:clamp(40px,7vw,58px);border-radius:50%;border:4px solid #fff;box-shadow:var(--shadow);padding:0}
+.pcol.on{outline:5px solid #fab005}
+@media (max-width:520px){.palgrid{grid-template-columns:repeat(6,1fr);gap:8px}}
+@media (orientation:landscape) and (max-height:520px){
+  .palgrid{gap:6px}.pcol{width:34px;height:34px;border-width:3px}
+  .zbtn{min-width:36px;height:36px;font-size:16px}
+}
