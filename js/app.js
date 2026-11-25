@@ -6,6 +6,7 @@ import { h, topbar, confetti, modal, gate, toast, refreshStars, cheer, starRow }
 import { balloonScreen, blocksScreen } from './games.js';
 import { drawScreen, pictureScreen } from './draw.js';
 import { loadChars, skin, art, charEl } from './chars.js';
+import { numHubScreen, numTraceScreen, countScreen } from './numbers.js';
 import { bookScreen, parentScreen } from './book.js';
 
 const app = document.getElementById('app');
@@ -41,7 +42,7 @@ function homeScreen(go) {
   const menu = [
     ['✏️', '따라쓰기', 'pick', '#ffd8a8'], ['🎈', '풍선 터뜨리기', 'balloon', '#ffc9c9'],
     ['🧩', '글자 블록', 'blocks', '#d0ebff'], ['🎨', '그리기', 'draw', '#d3f9d8'],
-    ['⭐', '스티커북', 'book', '#fff3bf'], ['🏷️', '내 이름', 'name', '#e5dbff'],
+    ['🔢', '숫자', 'numbers', '#c5f6fa'], ['⭐', '스티커북', 'book', '#fff3bf'], ['🏷️', '내 이름', 'name', '#e5dbff'],
   ];
   const t = todayLetter(), tk = skin(t, true);
   const got = LETTERS.filter((l) => store.stickers[l.id]).length;
@@ -187,6 +188,7 @@ function nameScreen(go) {
 const screens = {
   home: homeScreen, pick: pickScreen, trace: traceScreen, name: nameScreen,
   balloon: balloonScreen, blocks: blocksScreen, draw: drawScreen, picture: pictureScreen, book: bookScreen, parent: parentScreen,
+  numbers: numHubScreen, numtrace: numTraceScreen, count: countScreen,
 };
 
 // ============ 사용 시간 관리 ============

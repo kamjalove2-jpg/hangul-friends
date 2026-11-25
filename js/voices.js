@@ -2,12 +2,14 @@
 // 예) "기역. 기차!" → [기역] + [기차], "기역 어디 있을까?" → [기역] + [어디 있을까]
 import { LETTERS } from './data.js';
 import { PICTURES } from './pictures.js';
+import { NATIVE_WORDS, SINO_WORDS } from './numbers.js';
 
 const PHRASES = [
   '어디 있을까', '이건', '찾아보자', '우와', '모두 맞췄어요', '최고예요',
   '천천히 한 번 더 써 볼까', '이름을 다 썼어요', '멋져요', '참 잘했어요',
   '오늘은 많이 놀았어요', '이제 쉬는 시간이에요', '안녕',
   '그려 볼까', '완성', '선을 따라 천천히 한 번 더', '멋지게 그렸어요',
+  '숫자 놀이 하자', '세어 보자', '몇 개일까', '정답', '다시 세어 볼까',
 ];
 
 // 그룹별 조각 목록 (같은 글이 여러 곳에 나오면 한 번만)
@@ -20,6 +22,8 @@ export const CLIP_GROUPS = (() => {
   add('글자 이름', LETTERS.map((l) => l.say));
   add('글자 단어', LETTERS.map((l) => l.word));
   add('그림 이름', PICTURES.map((p) => p.name));
+  add('숫자 (하나·둘)', NATIVE_WORDS);
+  add('숫자 (일·이)', SINO_WORDS);
   add('자주 쓰는 말', PHRASES);
   return out;
 })();

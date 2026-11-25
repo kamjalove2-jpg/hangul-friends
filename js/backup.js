@@ -7,7 +7,7 @@ const blobToData = (b) => new Promise((res) => { const r = new FileReader(); r.o
 const dataToBlob = async (d) => (await fetch(d)).blob();
 
 // AI 목소리는 기기마다 설치된 목소리가 달라 옮기지 않음
-const SETTING_KEYS = ['limit', 'level', 'sound', 'vol', 'play', 'clips'];
+const SETTING_KEYS = ['limit', 'level', 'sound', 'vol', 'play', 'clips', 'numMax', 'numRead'];
 const PROGRESS_KEYS = ['stickers', 'stars', 'days', 'pics', 'board', 'bg'];
 
 export async function exportAll({ progress = true } = {}) {

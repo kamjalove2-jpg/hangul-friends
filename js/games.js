@@ -3,12 +3,14 @@ import { store, addStars, save } from './store.js';
 import { sfx, speak, sayLetter } from './audio.js';
 import { h, shuffle, topbar, confetti, modal, refreshStars, cheer } from './ui.js';
 import { skin, charEl } from './chars.js';
+import { numsInRange, readNum } from './numbers.js';
 
 // ============ 풍선 터뜨리기 ============
 const EASY = ['ㅣ', 'ㅡ', 'ㅇ', 'ㅏ', 'ㅗ', 'ㅜ', 'ㄱ', 'ㄴ', 'ㅁ', 'ㅅ'];
 const BCOL = ['#ff6b6b', '#ffa94d', '#fcc419', '#51cf66', '#339af0', '#cc5de8'];
 
-export function balloonScreen(go) {
+export function balloonScreen(go, arg = {}) {
+  const nums = !!(arg && arg.nums); // 숫자 풍선
   const ROUNDS = 5;
   let round = 0, done = 0, target = null, locked = false, timers = [], alive = true;
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); };
@@ -25,7 +27,8 @@ export function balloonScreen(go) {
     if (round >= ROUNDS) return finish();
     round++; locked = false; stage.innerHTML = ''; drawDots();
     const collected = LETTERS.filter((l) => store.stickers[l.id]);
-    const pool = collected.length >= 5 ? LETTERS : EASY.map((i) => BY[i]);
+    const pool = nums ? numsInRange().map((x) => ({ id: x.id, ch: x.ch, n: x.n, say: readNum(x.n) }))
+      : collected.length >= 5 ? LETTERS : EASY.map((i) => BY[i]);
     target = pool[Math.floor(Math.random() * pool.length)];
     const nOther = round > 2 ? 3 : 2;
     const list = shuffle([target, ...shuffle(pool.filter((l) => l !== target)).slice(0, nOther)]);
@@ -49,7 +52,7 @@ export function balloonScreen(go) {
       confetti(r.left + r.width / 2, r.top + r.height / 2, 18);
       addStars(1); refreshStars();
       // 내 캐릭터가 연결된 글자면 풍선 자리에서 캐릭터가 깜짝 등장
-      const sk = skin(target);
+      const sk = nums ? { char: null } : skin(target);
       if (sk.char) {
         const sr = stage.getBoundingClientRect();
         const pc = charEl(sk.char, 'popchar');
@@ -59,7 +62,7 @@ export function balloonScreen(go) {
       // 글자 읽기(AI + 내 녹음)가 다 끝난 뒤 다음 문제로 (최소 2초)
       const t0 = Date.now();
       later(async () => {
-        await sayLetter(sk);
+        if (nums) await speak(target.say + '!'); else await sayLetter(sk);
         if (alive) later(newRound, Math.max(400, 2200 - (Date.now() - t0)));
       }, 250);
     } else {
@@ -76,7 +79,8 @@ export function balloonScreen(go) {
       h('div', { class: 'row' }, h('div', { class: 'bigemo' }, '🎈🏆🎈'), cheer()), h('div', { class: 'cap' }, '별 +2 ⭐⭐'),
       h('div', { class: 'row' },
         h('button', { class: 'btn round', onclick: () => { m.close(); round = 0; done = 0; newRound(); } }, '🔁'),
-        h('button', { class: 'btn round', onclick: () => { m.close(); go('home'); } }, '🏠'))), { dismiss: false });
+        nums ? h('button', { class: 'btn round', onclick: () => { m.close(); go('numbers'); } }, '🔢')
+          : h('button', { class: 'btn round', onclick: () => { m.close(); go('home'); } }, '🏠'))), { dismiss: false });
   }
 
   newRound();

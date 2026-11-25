@@ -6,15 +6,17 @@ import { h, topbar, gate, toast, modal } from './ui.js';
 import { LEVEL_NAMES } from './trace.js';
 import { allChars, chars, charEl, addChar, delChar, setHidden, setLink, skin, art, fileToCanvas, removeBg, canvasBlob } from './chars.js';
 import { guessLetters } from './data.js';
+import { NUMS, readNum } from './numbers.js';
 import { exportAll, importAll, readBackup, saveFile, backupName } from './backup.js';
 
 // ============ 스티커북 ============
-export function bookScreen(go) {
-  let tab = 'col';
+export function bookScreen(go, arg = {}) {
+  let tab = arg && arg.tab === 'num' ? 'num' : 'col';
   const body = h('div', { class: 'bookbody' });
   const t1 = h('button', { class: 'tab', onclick: () => { tab = 'col'; render(); } }, '📖');
+  const tn = h('button', { class: 'tab', onclick: () => { tab = 'num'; render(); } }, '🔢');
   const t2 = h('button', { class: 'tab', onclick: () => { tab = 'deco'; render(); } }, '🎨');
-  const el = h('div', { class: 'screen' }, topbar(go, { title: '', right: h('div', { class: 'row' }, t1, t2) }), body);
+  const el = h('div', { class: 'screen' }, topbar(go, { title: '', right: h('div', { class: 'row' }, t1, tn, t2) }), body);
 
   const items = () => {
     const a = LETTERS.filter((l) => store.stickers[l.id]).map((l) => {
@@ -22,15 +24,16 @@ export function bookScreen(go) {
       return { id: l.id, emoji: l.emoji, l, c: sk.char && sk.mode === 'replace' ? sk.char : null };
     });
     if (store.stickers.name) a.push({ id: 'name', emoji: '🏅', l: null });
+    NUMS.filter((x) => store.stickers[x.id]).forEach((x) => a.push({ id: x.id, emoji: x.emoji, l: null }));
     // 글자를 대체한 캐릭터는 이미 글자 스티커로 나오므로 따로 넣지 않음
     chars().filter((c) => !(c.letter && c.mode === 'replace')).forEach((c) => a.push({ id: 'char:' + c.id, c, l: null }));
     return a;
   };
 
   function render() {
-    t1.classList.toggle('on', tab === 'col'); t2.classList.toggle('on', tab === 'deco');
+    t1.classList.toggle('on', tab === 'col'); tn.classList.toggle('on', tab === 'num'); t2.classList.toggle('on', tab === 'deco');
     body.innerHTML = '';
-    body.append(tab === 'col' ? collection() : deco());
+    body.append(tab === 'col' ? collection() : tab === 'num' ? numCollection() : deco());
   }
 
   function collection() {
@@ -46,6 +49,20 @@ export function bookScreen(go) {
       grid.append(h('button', { class: 'scard got', onclick: () => { sfx('star'); speak(store.name + '!'); } },
         h('div', { class: 'semo' }, '🏅'), h('div', { class: 'sch small' }, store.name)));
     }
+    return grid;
+  }
+
+  // 숫자 스티커 (부모 설정 범위까지)
+  function numCollection() {
+    const grid = h('div', { class: 'sgrid scroll' });
+    const max = [5, 10, 20].includes(store.settings.numMax) ? store.settings.numMax : 10;
+    NUMS.filter((x) => x.n <= max || store.stickers[x.id]).forEach((x) => {
+      const s = store.stickers[x.id];
+      grid.append(h('button', {
+        class: 'scard' + (s ? ' got' : '') + (s && s.gold ? ' gold' : ''),
+        onclick: () => { if (s) { sfx('star'); speak(readNum(x.n) + '!'); } else sfx('tap'); },
+      }, h('div', { class: 'semo' }, x.emoji), h('div', { class: 'sch numsch' }, x.ch), s && s.count > 1 ? h('div', { class: 'cnt' }, '×' + s.count) : null));
+    });
     return grid;
   }
 
@@ -135,6 +152,17 @@ export function parentScreen(go) {
       const c = store.stickers[l.id];
       return h('span', { class: 'pchip' + (c ? ' got' : '') }, `${l.ch} ${c ? '✓' + c.count : '·'}`);
     }))),
+    sec('🔢 숫자 공부',
+      h('div', { class: 'row wrap' }, h('b', {}, '숫자 범위'),
+        seg([[5, '1~5'], [10, '1~10'], [20, '1~20']], [5, 10, 20].includes(s.numMax) ? s.numMax : 10, (v) => { s.numMax = v; })),
+      h('div', { class: 'gap' }),
+      h('div', { class: 'row wrap' }, h('b', {}, '읽는 방식'),
+        seg([['native', '하나·둘·셋'], ['sino', '일·이·삼'], ['both', '둘 다 (삼! 셋!)']], s.numRead || 'native', (v) => { s.numRead = v; speak(readNum(3)); })),
+      h('p', { class: 'hint' }, '물건을 셀 때는 "하나·둘·셋"이 자연스러워요. 세어 보기는 1~10까지만 나와요.'),
+      h('div', { class: 'chips' }, NUMS.map((x) => {
+        const c = store.stickers[x.id];
+        return h('span', { class: 'pchip' + (c ? ' got' : '') }, `${x.ch} ${c ? '✓' + c.count : '·'}`);
+      }))),
     sec('내 목소리로 글자 녹음하기', h('p', { class: 'hint' }, '⏺를 누르고 말한 뒤 ⏹를 누르면 저장돼요. 예) "기차 칙칙폭폭!", "인욱아 잘했어!" — AI가 먼저 읽고 이어서 내 목소리가 나와요.'), recList()),
     sec('내 캐릭터 (사진은 이 iPad 안에만 저장돼요)', charBox()),
     sec('백업 · 다른 기기로 옮기기 (PC ↔ iPad ↔ 폰)', backupBox()),

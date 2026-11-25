@@ -330,3 +330,31 @@ select.inp{max-width:420px;background:#fff}
   .palgrid{gap:6px}.pcol{width:34px;height:34px;border-width:3px}
   .zbtn{min-width:36px;height:36px;font-size:16px}
 }
+
+/* ---- 숫자 공부 ---- */
+.menu{grid-template-columns:repeat(4,1fr)}
+@media (max-aspect-ratio:1/1){.menu{grid-template-columns:repeat(2,1fr)}}
+.menu.numhub{grid-template-columns:repeat(3,1fr);padding-top:10px}
+@media (max-aspect-ratio:1/1){.menu.numhub{grid-template-columns:1fr}}
+.pke.numch{font-weight:900;color:#1971c2}
+.numbig{font-weight:900;color:#1971c2;font-family:var(--font)}
+.manyemo{font-size:clamp(26px,4.5vw,44px);max-width:min(560px,80vw);line-height:1.2;word-break:break-all}
+.sch.numsch{font-size:32px;color:#1971c2}
+.cstage{position:relative;flex:1;min-height:0;margin:0 20px}
+.citem{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;font-size:var(--s);line-height:1;width:calc(var(--s)*1.25);height:calc(var(--s)*1.25);
+  display:flex;align-items:center;justify-content:center;border-radius:50%;transition:transform .15s}
+.citem:active{transform:translate(-50%,-50%) scale(.92)}
+.citem .citimg{width:100%;height:100%}
+.citem.done{background:rgba(255,224,102,.55);box-shadow:0 0 0 4px #fab005}
+.cbadge{position:absolute;right:-6px;top:-6px;background:#e8590c;color:#fff;font-size:22px;font-weight:900;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-family:var(--font)}
+.copts{display:flex;justify-content:center;gap:24px;padding:10px 16px 22px;min-height:120px}
+.copt{border:0;border-radius:28px;background:#fff;box-shadow:var(--shadow);font-size:clamp(48px,8vw,80px);font-weight:900;width:clamp(96px,16vw,150px);height:clamp(96px,16vw,150px);color:#1971c2;animation:pop-in .3s}
+.copt.right{background:#d3f9d8}
+.copt.shake{animation:shake .45s}
+@media (orientation:landscape) and (max-height:520px){
+  .menu{grid-template-columns:repeat(7,1fr)}
+  .menu.numhub{grid-template-columns:repeat(3,1fr)}
+  .copts{min-height:80px;padding:4px 16px 8px}
+  .copt{width:72px;height:72px;font-size:40px;border-radius:20px}
+  .cbadge{width:28px;height:28px;font-size:16px}
+}
